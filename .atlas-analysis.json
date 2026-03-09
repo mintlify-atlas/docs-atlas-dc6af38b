@@ -1,0 +1,57 @@
+{
+  "projectType": "cli-tool",
+  "projectName": "Vault",
+  "projectDescription": "A simple, file-backed CLI key-value store for saving, retrieving, deleting, and listing secrets locally using SQLite.",
+  "theme": "aspen",
+  "primaryColor": "#044c84",
+  "lightColor": null,
+  "darkColor": null,
+  "navigation": {
+    "groups": [
+      {
+        "group": "Get Started",
+        "pages": [
+          "introduction",
+          "installation",
+          "quickstart"
+        ]
+      },
+      {
+        "group": "Commands",
+        "pages": [
+          "commands/add",
+          "commands/get",
+          "commands/update",
+          "commands/remove",
+          "commands/list"
+        ]
+      },
+      {
+        "group": "Configuration",
+        "pages": [
+          "configuration/database",
+          "configuration/troubleshooting"
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Store and retrieve key-value pairs locally",
+    "SQLite-backed persistent storage",
+    "Cross-platform support (Windows, macOS, Linux)",
+    "Simple five-command interface (add, get, update, remove, list)",
+    "Per-user database isolation"
+  ],
+  "publicApiSurface": [
+    "vault add <key> <value>",
+    "vault get <key>",
+    "vault update <key> <value>",
+    "vault remove <key>",
+    "vault list",
+    "Store.Add(string key, string value)",
+    "Store.Get(string key)",
+    "Store.Update(string key, string value)",
+    "Store.Remove(string key)",
+    "Store.ListKeys()"
+  ]
+}
