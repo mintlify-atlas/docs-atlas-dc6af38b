@@ -1,0 +1,222 @@
+---
+title: 'Database Configuration'
+description: 'SQLite database configuration, schema, and storage details for Vault CLI'
+---
+
+## Overview
+
+Vault uses SQLite as its storage backend, with each user having their own isolated database file. The database is automatically created and initialized when you first run any Vault command.
+
+## Database Location
+
+The SQLite database is stored in a per-user directory at `~/.kvstore/store.db`. The exact path depends on your operating system:
+
+<CodeGroup>
+
+```bash Windows
+C:\Users\{username}\.kvstore\store.db
+```
+
+```bash macOS
+/Users/{username}/.kvstore/store.db
+```
+
+```bash Linux
+/home/{username}/.kvstore/store.db
+```
+
+</CodeGroup>
+
+<Note>
+The `.kvstore` directory is automatically created in your user profile directory if it doesn't exist. This ensures per-user data isolation.
+</Note>
+
+## Database Path Resolution
+
+The database path is determined by the `GetDatabasePath()` method in KVSTORE.cs (lines 36-45):
+
+```csharp
+private string GetDatabasePath()
+{
+    string homeDir = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+    string kvstoreDir = Path.Combine(homeDir, ".kvstore");
+    if (!Directory.Exists(kvstoreDir))
+    {
+        Directory.CreateDirectory(kvstoreDir);
+    }
+    return Path.Combine(kvstoreDir, "store.db");
+}
+```
+
+This method:
+1. Resolves the user's home directory using `Environment.SpecialFolder.UserProfile`
+2. Creates the `.kvstore` directory if it doesn't exist
+3. Returns the full path to `store.db`
+
+## Database Schema
+
+The database contains a single table called `store` with the following structure:
+
+```sql
+CREATE TABLE IF NOT EXISTS store (
+  id INT PRIMARY KEY,
+  key TEXT UNIQUE,
+  value TEXT
+)
+```
+
+### Table Structure
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | INT | PRIMARY KEY | Unique identifier for each entry |
+| `key` | TEXT | UNIQUE | The key name (must be unique) |
+| `value` | TEXT | - | The value associated with the key |
+
+<Note>
+The `UNIQUE` constraint on the `key` column ensures that duplicate keys cannot be added to the database. Attempting to add a duplicate key will result in a SQLite constraint violation.
+</Note>
+
+## Automatic Initialization
+
+The database is automatically initialized when the `Store` object is created. The initialization process (KVSTORE.cs lines 24-35):
+
+```csharp
+private void InitializeDatabase()
+{
+    using var command = connection.CreateCommand();
+    command.CommandText = """
+    CREATE TABLE IF NOT EXISTS store (
+    id INT PRIMARY KEY,
+    key TEXT UNIQUE,
+    value TEXT
+    )
+    """;
+    command.ExecuteNonQuery();
+}
+```
+
+The `CREATE TABLE IF NOT EXISTS` statement ensures:
+- The table is created only if it doesn't already exist
+- Existing data is preserved when running Vault commands
+- No manual database setup is required
+
+## SQLite Package
+
+Vault uses the **Microsoft.Data.Sqlite** package for database operations. This is the official Microsoft SQLite provider for .NET and provides:
+
+- Cross-platform support (Windows, macOS, Linux)
+- Full ADO.NET compatibility
+- Parameterized queries to prevent SQL injection
+- Connection pooling and performance optimization
+
+## Connection Management
+
+The database connection is managed through the `Store` class constructor (KVSTORE.cs lines 12-23):
+
+```csharp
+public Store(string? dbPath = null)
+{
+    string resolvedPath = string.IsNullOrWhiteSpace(dbPath) ? GetDatabasePath() : dbPath;
+    string? directory = Path.GetDirectoryName(resolvedPath);
+    if (!string.IsNullOrEmpty(directory) && !Directory.Exists(directory))
+    {
+        Directory.CreateDirectory(directory);
+    }
+    connection = new SqliteConnection($"Data Source={resolvedPath}");
+    connection.Open();
+    InitializeDatabase();
+}
+```
+
+This process:
+1. Resolves the database path (using default or custom path)
+2. Creates the parent directory if it doesn't exist
+3. Opens a SQLite connection
+4. Initializes the database schema
+
+<Warning>
+The Store class implements IDisposable to properly close and dispose of the database connection. The connection is automatically managed when using the CLI.
+</Warning>
+
+## Backup and Migration
+
+### Creating a Backup
+
+Since Vault uses a single SQLite file, backing up your data is straightforward:
+
+<CodeGroup>
+
+```bash Windows
+copy %USERPROFILE%\.kvstore\store.db %USERPROFILE%\.kvstore\store.db.backup
+```
+
+```bash macOS/Linux
+cp ~/.kvstore/store.db ~/.kvstore/store.db.backup
+```
+
+</CodeGroup>
+
+### Restoring from Backup
+
+To restore from a backup, simply copy the backup file back:
+
+<CodeGroup>
+
+```bash Windows
+copy %USERPROFILE%\.kvstore\store.db.backup %USERPROFILE%\.kvstore\store.db
+```
+
+```bash macOS/Linux
+cp ~/.kvstore/store.db.backup ~/.kvstore/store.db
+```
+
+</CodeGroup>
+
+<Note>
+Make sure Vault is not running when restoring from a backup to avoid database locking issues.
+</Note>
+
+### Migrating to a Different Machine
+
+To migrate your Vault data to another machine:
+
+1. Locate your database file at `~/.kvstore/store.db`
+2. Copy it to the same location on the new machine
+3. Ensure the `.kvstore` directory exists on the new machine
+4. Run any Vault command to verify the migration
+
+```bash
+# On new machine, create directory if needed
+mkdir -p ~/.kvstore
+
+# Copy the database file
+# Then verify
+vault list
+```
+
+## Per-User Isolation
+
+Each user account on the system has their own isolated database:
+
+- Data is stored in each user's home directory
+- No shared data between users
+- No special permissions or configuration required
+- Suitable for multi-user systems
+
+<Note>
+If you need to share data between users, you can use a custom database path, though this is not officially supported by the CLI interface.
+</Note>
+
+## Database File Size
+
+The SQLite database file grows dynamically based on the number of keys and the size of values stored:
+
+- Initial empty database: ~8-12 KB
+- Grows incrementally as data is added
+- SQLite uses page-based storage (typically 4 KB pages)
+- No automatic compression or cleanup
+
+<Note>
+Deleting keys does not automatically shrink the database file. To reclaim space, you would need to manually run `VACUUM` on the database or delete and recreate the database file.
+</Note>

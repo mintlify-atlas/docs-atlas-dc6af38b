@@ -1,80 +1,357 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: 'Quickstart'
+description: 'Get started with Vault in minutes - learn the core commands with hands-on examples'
 ---
 
-## Get started in three steps
+<Note>
+  This guide assumes you have already [installed Vault](/installation). If not, complete the installation first.
+</Note>
 
-Get your documentation site running locally and make your first customization.
+## Your First Vault Commands
 
-### Step 1: Set up your local environment
+Let's walk through the essential Vault operations. By the end of this guide, you'll understand how to store, retrieve, update, and manage key-value data.
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+<Steps>
+  <Step title="Add your first key-value pair">
+    Let's start by storing a simple key-value pair. We'll add an API key for a fictional service:
 
-### Step 2: Deploy your changes
+    ```bash
+    vault add api_key "sk-1234567890abcdef"
+    ```
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    **Expected output:**
+    ```
+    Adding key: api_key with the value: sk-1234567890abcdef to the vault
+    ```
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+    <Info>
+      Values with spaces must be quoted. For example: `vault add greeting "Hello World"`
+    </Info>
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    Let's add a few more entries to work with:
 
-### Step 3: Go live
+    ```bash
+    vault add database_url "postgresql://localhost/mydb"
+    vault add max_connections "100"
+    vault add app_name "MyApplication"
+    ```
+  </Step>
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+  <Step title="List all keys">
+    Now let's see what keys we've stored in the vault:
 
-## Next steps
+    ```bash
+    vault list
+    ```
 
-Now that you have your docs running, explore these key features:
+    **Expected output:**
+    ```
+    api_key
+    app_name
+    database_url
+    max_connections
+    ```
+
+    <Note>
+      Keys are displayed in alphabetical order. If your vault is empty, you'll see `(no keys)` instead.
+    </Note>
+  </Step>
+
+  <Step title="Retrieve a value">
+    To get the value associated with a key, use the `get` command:
+
+    ```bash
+    vault get api_key
+    ```
+
+    **Expected output:**
+    ```
+    sk-1234567890abcdef
+    ```
+
+    If you try to get a key that doesn't exist:
+
+    ```bash
+    vault get nonexistent_key
+    ```
+
+    **Expected output:**
+    ```
+    Key not found
+    ```
+  </Step>
+
+  <Step title="Update an existing value">
+    Need to change a value? Use the `update` command:
+
+    ```bash
+    vault update max_connections "200"
+    ```
+
+    **Expected output:**
+    ```
+    Updating key: max_connections with the value: 200 in the vault
+    ```
+
+    Verify the update:
+
+    ```bash
+    vault get max_connections
+    ```
+
+    **Expected output:**
+    ```
+    200
+    ```
+
+    <Warning>
+      If you try to update a key that doesn't exist, you'll see:
+      ```
+      Key: nonexistent_key does not exist in db
+      ```
+      Use `add` for new keys and `update` only for existing ones.
+    </Warning>
+  </Step>
+
+  <Step title="Remove a key">
+    When you no longer need a key, remove it from the vault:
+
+    ```bash
+    vault remove api_key
+    ```
+
+    **Expected output:**
+    ```
+    Removing key: key api_key from vault
+    ```
+
+    Verify the key is gone:
+
+    ```bash
+    vault list
+    ```
+
+    **Expected output:**
+    ```
+    app_name
+    database_url
+    max_connections
+    ```
+
+    Notice that `api_key` is no longer in the list.
+  </Step>
+</Steps>
+
+## Command Reference
+
+Here's a quick reference for all Vault commands:
 
 <CardGroup cols={2}>
+  <Card title="add" icon="plus" color="#044c84">
+    ```bash
+    vault add <key> <value>
+    ```
+    Store a new key-value pair. The key must be unique.
+  </Card>
 
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
+  <Card title="get" icon="download" color="#0057e7">
+    ```bash
+    vault get <key>
+    ```
+    Retrieve the value for a given key.
+  </Card>
 
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
+  <Card title="update" icon="pen-to-square" color="#044c84">
+    ```bash
+    vault update <key> <value>
+    ```
+    Update the value of an existing key.
+  </Card>
 
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
+  <Card title="remove" icon="trash" color="#0057e7">
+    ```bash
+    vault remove <key>
+    ```
+    Delete a key and its value from the vault.
+  </Card>
 
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="list" icon="list" color="#044c84">
+    ```bash
+    vault list
+    ```
+    Display all keys in alphabetical order.
+  </Card>
 </CardGroup>
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+## Practical Examples
+
+### Storing Configuration
+
+Use Vault to store application configuration that you need across development sessions:
+
+```bash
+# Store database credentials
+vault add db_host "localhost"
+vault add db_port "5432"
+vault add db_name "development"
+vault add db_user "developer"
+
+# Retrieve them later
+vault get db_host
+vault get db_port
+```
+
+### Managing API Keys
+
+Keep track of different API keys for various services:
+
+```bash
+# Store multiple API keys
+vault add github_token "ghp_xxxxxxxxxxxx"
+vault add openai_key "sk-xxxxxxxxxxxx"
+vault add stripe_key "sk_test_xxxxxxxxxxxx"
+
+# List all keys to see what you have
+vault list
+```
+
+### Script Integration
+
+Vault is perfect for scripts that need to access stored values:
+
+```bash
+#!/bin/bash
+
+# Retrieve values from vault
+API_KEY=$(vault get api_key)
+BASE_URL=$(vault get base_url)
+
+# Use them in your script
+curl -H "Authorization: Bearer $API_KEY" "$BASE_URL/api/data"
+```
+
+### Updating Configuration
+
+When your configuration changes:
+
+```bash
+# Update an existing value
+vault update db_host "production-server.example.com"
+
+# Verify the change
+vault get db_host
+```
+
+## Common Patterns
+
+### Command Arguments
+
+<CodeGroup>
+  ```bash Single word values
+  vault add port 8080
+  vault add environment production
+  ```
+
+  ```bash Multi-word values (quoted)
+  vault add welcome_message "Welcome to our application!"
+  vault add error_text "Something went wrong. Please try again."
+  ```
+
+  ```bash Special characters
+  vault add api_endpoint "https://api.example.com/v1/users"
+  vault add regex_pattern "^[a-zA-Z0-9]+$"
+  ```
+</CodeGroup>
+
+### Error Handling
+
+Vault provides clear feedback when operations fail:
+
+```bash
+# Trying to add a duplicate key
+vault add api_key "new-value"
+# Error: SQLite will reject this due to UNIQUE constraint
+
+# Trying to update a non-existent key
+vault update missing_key "value"
+# Output: Key: missing_key does not exist in db
+
+# Trying to get a non-existent key
+vault get missing_key
+# Output: Key not found
+```
+
+## Tips and Best Practices
+
+<AccordionGroup>
+  <Accordion title="Use descriptive key names" icon="tag">
+    Choose clear, consistent naming conventions for your keys:
+
+    ```bash
+    # Good
+    vault add aws_access_key "..."
+    vault add aws_secret_key "..."
+    vault add aws_region "us-east-1"
+
+    # Avoid
+    vault add key1 "..."
+    vault add k "..."
+    ```
+  </Accordion>
+
+  <Accordion title="Quote values with spaces or special characters" icon="quotes">
+    Always use quotes for values that contain spaces or special characters:
+
+    ```bash
+    vault add message "Hello, World!"
+    vault add json '{"name": "value"}'
+    ```
+  </Accordion>
+
+  <Accordion title="List regularly to avoid duplicates" icon="list">
+    Before adding a key, check if it already exists:
+
+    ```bash
+    vault list | grep api_key
+    ```
+  </Accordion>
+
+  <Accordion title="Backup your vault" icon="floppy-disk">
+    Your vault is stored in a SQLite database. To backup:
+
+    <CodeGroup>
+      ```bash macOS/Linux
+      cp ~/.kvstore/store.db ~/.kvstore/store.db.backup
+      ```
+
+      ```bash Windows
+      copy %USERPROFILE%\.kvstore\store.db %USERPROFILE%\.kvstore\store.db.backup
+      ```
+    </CodeGroup>
+  </Accordion>
+</AccordionGroup>
+
+## What's Next?
+
+You now know the fundamentals of using Vault! Here are some next steps:
+
+<CardGroup cols={2}>
+  <Card title="Commands" icon="terminal" href="/commands/add" color="#0057e7">
+    Detailed documentation for every command
+  </Card>
+  <Card title="Database Location" icon="database" href="/configuration/database" color="#044c84">
+    Understand where your data is stored
+  </Card>
+  <Card title="Troubleshooting" icon="wrench" href="/configuration/troubleshooting" color="#0057e7">
+    Solutions to common problems
+  </Card>
+</CardGroup>
+
+## Need Help?
+
+If you run into issues:
+
+1. Check that you're using the correct command syntax
+2. Verify that .NET 9.0 or later is installed
+3. Ensure you have write permissions to your home directory
+4. Review the [installation guide](/installation) for troubleshooting tips

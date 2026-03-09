@@ -1,0 +1,205 @@
+---
+title: 'list'
+description: 'List all keys stored in the vault'
+---
+
+## Overview
+
+The `list` command displays all keys currently stored in the vault, sorted alphabetically in ascending order. If the vault is empty, it displays "(no keys)".
+
+## Syntax
+
+```bash
+vault list
+```
+
+## Parameters
+
+This command takes no parameters.
+
+## Examples
+
+### Basic Usage
+
+```bash
+vault list
+```
+
+### Expected Output
+
+**When vault contains keys:**
+```text
+api_key
+database_host
+database_port
+username
+```
+
+**When vault is empty:**
+```text
+(no keys)
+```
+
+### Complete Workflow Example
+
+```bash
+# Check empty vault
+vault list
+# Output: (no keys)
+
+# Add some keys
+vault add zebra "last item"
+vault add apple "first item"
+vault add middle "middle item"
+
+# List all keys (sorted alphabetically)
+vault list
+# Output:
+# apple
+# middle
+# zebra
+
+# Remove a key
+vault remove middle
+
+# List again
+vault list
+# Output:
+# apple
+# zebra
+```
+
+## Implementation Details
+
+### Under the Hood
+
+The `list` command executes the following SQL query (KVSTORE.cs:111-114):
+
+```sql
+SELECT key FROM store
+ORDER BY key ASC
+```
+
+The full implementation (KVSTORE.cs:108-127):
+
+```csharp
+public int ListKeys()
+{
+    using var command = connection.CreateCommand();
+    command.CommandText = """
+        SELECT key FROM store
+        ORDER BY key ASC
+        """;
+    using var reader = command.ExecuteReader();
+    bool any = false;
+    while (reader.Read())
+    {
+        any = true;
+        Console.WriteLine(reader.GetString(0));
+    }
+    if (!any)
+    {
+        Console.WriteLine("(no keys)");
+    }
+    return 0;
+}
+```
+
+### Validation
+
+The command validates that exactly 0 arguments are provided (KVSTORE.cs:187-191):
+
+```csharp
+case "list":
+    if (args.Length == 0)
+    {
+        return Command.LIST;
+    }
+```
+
+## Behavior Notes
+
+<Note>
+**Alphabetical Sorting**
+
+Keys are always returned in ascending alphabetical order (A-Z), regardless of the order in which they were added to the vault.
+
+This sorting is performed by SQLite using the `ORDER BY key ASC` clause.
+</Note>
+
+<Note>
+**Values Not Shown**
+
+The `list` command only displays keys, not their associated values. This is useful for:
+
+- Getting an overview of what's stored without exposing sensitive values
+- Finding key names before using [`get`](/commands/get) to retrieve specific values
+- Checking which keys exist before adding, updating, or removing entries
+
+To see a value, use `vault get <key>`.
+</Note>
+
+## Error Cases
+
+<Warning>
+**Invalid Arguments**
+
+Providing any arguments to the `list` command will result in:
+
+```text
+Please enter a valid command, could not execute
+```
+
+The command must be called with zero arguments:
+
+```bash
+vault list        # ✓ Correct
+vault list all    # ✗ Invalid - too many arguments
+```
+</Warning>
+
+## Use Cases
+
+- **Inventory check**: See all keys stored in your vault
+- **Before cleanup**: Review what keys exist before removing old entries
+- **Script integration**: Get a list of all available keys for automation
+- **Memory aid**: Recall what you've stored when you forget a key name
+- **Audit**: Verify which secrets or configuration values are present
+
+## Script Integration
+
+The `list` command is particularly useful in shell scripts:
+
+```bash
+#!/bin/bash
+
+# Get all keys and process them
+for key in $(vault list); do
+    if [ "$key" != "(no keys)" ]; then
+        value=$(vault get "$key")
+        echo "$key=$value"
+    fi
+done
+```
+
+<Warning>
+**Empty Vault Detection**
+
+When scripting, check for the "(no keys)" output to detect an empty vault:
+
+```bash
+output=$(vault list)
+if [ "$output" = "(no keys)" ]; then
+    echo "Vault is empty"
+else
+    echo "Vault contains keys"
+fi
+```
+</Warning>
+
+## Related Commands
+
+- [`add`](/commands/add) - Add new keys to the vault
+- [`get`](/commands/get) - Retrieve values for keys shown in the list
+- [`remove`](/commands/remove) - Delete keys from the vault
+- [`update`](/commands/update) - Update values for existing keys

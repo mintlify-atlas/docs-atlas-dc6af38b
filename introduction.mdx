@@ -1,0 +1,122 @@
+---
+title: 'Introduction'
+description: 'A simple and efficient command-line key-value store built with C# and SQLite'
+---
+
+<Note>
+  Vault is a lightweight CLI tool that provides a simple key-value store backed by SQLite, perfect for storing configuration, secrets, and other key-value data locally.
+</Note>
+
+## What is Vault?
+
+Vault is a command-line key-value store built with C# and .NET 9.0. It provides a fast, persistent storage solution for developers who need to store and retrieve data from the command line. Each user gets their own isolated SQLite database, ensuring data separation and security.
+
+## Why Use Vault?
+
+Vault solves the common problem of needing to store and retrieve data quickly from the command line without setting up a full database server or managing complex configuration files.
+
+**Key Benefits:**
+
+- **Simple CLI Interface** - Intuitive commands that are easy to remember
+- **Persistent Storage** - Data is stored in SQLite and persists across sessions
+- **Per-User Isolation** - Each user has their own database in their home directory
+- **Zero Configuration** - Database is automatically created on first use
+- **Cross-Platform** - Works on Windows, macOS, and Linux
+- **Fast Operations** - SQLite provides excellent performance for local storage
+
+## Key Features
+
+Vault provides five core operations for managing your key-value data:
+
+<CardGroup cols={2}>
+  <Card title="Add" icon="plus" color="#044c84">
+    Store a new key-value pair in the vault
+  </Card>
+  <Card title="Get" icon="download" color="#0057e7">
+    Retrieve a value by its key
+  </Card>
+  <Card title="Update" icon="pen-to-square" color="#044c84">
+    Modify the value of an existing key
+  </Card>
+  <Card title="Remove" icon="trash" color="#0057e7">
+    Delete a key and its value from the vault
+  </Card>
+  <Card title="List" icon="list" color="#044c84">
+    Display all stored keys in alphabetical order
+  </Card>
+</CardGroup>
+
+## Use Case Scenarios
+
+Vault is perfect for:
+
+- **Development Configuration** - Store API keys, connection strings, and other development settings
+- **Personal Data Management** - Keep track of personal notes, bookmarks, or snippets
+- **Script Parameters** - Store parameters that scripts need to access across executions
+- **Quick Data Lookup** - Maintain a personal database of frequently needed values
+- **CI/CD Variables** - Store environment-specific variables for local testing
+
+## Architecture Overview
+
+### SQLite-Backed Storage
+
+Vault uses SQLite as its storage backend, providing:
+
+- **ACID Compliance** - Atomic, consistent, isolated, and durable transactions
+- **Lightweight** - No separate server process required
+- **Reliable** - Battle-tested database engine used by millions
+- **Portable** - Single file database that can be backed up easily
+
+### Database Schema
+
+The vault uses a simple, efficient schema:
+
+```sql
+CREATE TABLE store (
+    id INT PRIMARY KEY,
+    key TEXT UNIQUE,
+    value TEXT
+)
+```
+
+Keys are enforced to be unique at the database level, preventing duplicate entries.
+
+### Per-User Storage
+
+Each user's data is stored in a dedicated location:
+
+- **Windows**: `C:\Users\{username}\.kvstore\store.db`
+- **macOS**: `/Users/{username}/.kvstore/store.db`
+- **Linux**: `/home/{username}/.kvstore/store.db`
+
+The database directory is automatically created when you first use Vault.
+
+<Warning>
+  The vault stores data in plain text in the SQLite database. While the database is only accessible to your user account, Vault is not designed for storing highly sensitive information like passwords or secrets that require encryption at rest.
+</Warning>
+
+## Getting Started
+
+Ready to start using Vault? Continue to the next sections:
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation" color="#0057e7">
+    Install Vault as a .NET global tool
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/quickstart" color="#044c84">
+    Learn the basics with a hands-on tutorial
+  </Card>
+</CardGroup>
+
+## Requirements
+
+- .NET 9.0 or later
+- Supported platforms: Windows, macOS, Linux
+
+## Open Source
+
+Vault is built with modern C# and leverages:
+
+- **.NET 9.0** - Latest .NET runtime
+- **Microsoft.Data.Sqlite** - Official SQLite provider for .NET
+- **Command Pattern** - Clean, maintainable architecture

@@ -1,0 +1,144 @@
+---
+title: 'get'
+description: 'Retrieve a value from the vault by its key'
+---
+
+## Overview
+
+The `get` command retrieves the value associated with a specific key from the vault. If the key doesn't exist, it returns "Key not found".
+
+## Syntax
+
+```bash
+vault get <key>
+```
+
+## Parameters
+
+<ParamField path="key" type="string" required>
+  The key whose value you want to retrieve.
+</ParamField>
+
+## Examples
+
+### Basic Usage
+
+<CodeGroup>
+```bash Retrieve existing key
+vault get api_key
+```
+
+```bash Non-existent key
+vault get missing_key
+```
+</CodeGroup>
+
+### Expected Output
+
+**When key exists:**
+```text
+sk-1234567890abcdef
+```
+
+**When key doesn't exist:**
+```text
+Key not found
+```
+
+### Complete Workflow Example
+
+```bash
+# Add a key
+vault add database_url "postgresql://localhost:5432/mydb"
+
+# Retrieve it
+vault get database_url
+# Output: postgresql://localhost:5432/mydb
+
+# Try to get a non-existent key
+vault get nonexistent
+# Output: Key not found
+```
+
+## Implementation Details
+
+### Under the Hood
+
+The `get` command executes the following SQL query (KVSTORE.cs:94-97):
+
+```sql
+SELECT value FROM store
+WHERE key = $key
+```
+
+The implementation reads the result and outputs either the value or "Key not found" (KVSTORE.cs:91-107):
+
+```csharp
+public int Get(string key)
+{
+    using var command = connection.CreateCommand();
+    command.CommandText = """
+        SELECT value FROM store
+        WHERE key = $key
+    """;
+    command.Parameters.AddWithValue("$key", key);
+    using var reader = command.ExecuteReader();
+    string? value = null;
+    while (reader.Read())
+    {
+        value = reader.GetString(0);
+    }
+    Console.WriteLine($"{value ?? "Key not found"}");
+    return 0;
+}
+```
+
+### Validation
+
+The command validates that exactly 1 argument is provided (KVSTORE.cs:181-185):
+
+```csharp
+case "get":
+    if (args.Length == 1)
+    {
+        return Command.GET;
+    }
+```
+
+## Error Cases
+
+<Note>
+**Key Not Found**
+
+If the specified key doesn't exist in the vault, the command outputs:
+
+```text
+Key not found
+```
+
+This is not an error condition - the command exits successfully (return code 0).
+</Note>
+
+<Warning>
+**Invalid Arguments**
+
+Providing the wrong number of arguments will result in:
+
+```text
+Please enter a valid command, could not execute
+```
+</Warning>
+
+## Use Cases
+
+- Retrieve API keys, tokens, or credentials stored in the vault
+- Check if a key exists before updating or removing it
+- Verify values after adding or updating entries
+- Integrate with shell scripts to fetch configuration values
+
+## Related Commands
+
+- [`add`](/commands/add) - Add a new key-value pair
+- [`update`](/commands/update) - Update an existing key's value
+- [`list`](/commands/list) - List all keys to see what's available
+- [`remove`](/commands/remove) - Delete a key-value pair

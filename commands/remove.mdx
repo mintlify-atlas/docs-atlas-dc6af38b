@@ -1,0 +1,166 @@
+---
+title: 'remove'
+description: 'Delete a key-value pair from the vault'
+---
+
+## Overview
+
+The `remove` command deletes a key and its associated value from the vault. The operation completes silently even if the key doesn't exist.
+
+## Syntax
+
+```bash
+vault remove <key>
+```
+
+## Parameters
+
+<ParamField path="key" type="string" required>
+  The key to delete from the vault.
+</ParamField>
+
+## Examples
+
+### Basic Usage
+
+<CodeGroup>
+```bash Remove a key
+vault remove api_key
+```
+
+```bash Remove multiple keys
+vault remove temp_token
+vault remove old_config
+vault remove deprecated_value
+```
+</CodeGroup>
+
+### Expected Output
+
+```text
+Removing key: key api_key from vault
+```
+
+<Note>
+The command outputs the same message regardless of whether the key existed or not.
+</Note>
+
+### Complete Workflow Example
+
+```bash
+# Add a key
+vault add temp_data "temporary value"
+
+# Verify it exists
+vault get temp_data
+# Output: temporary value
+
+# Remove it
+vault remove temp_data
+# Output: Removing key: key temp_data from vault
+
+# Verify it's gone
+vault get temp_data
+# Output: Key not found
+
+# Remove it again (no error)
+vault remove temp_data
+# Output: Removing key: key temp_data from vault
+```
+
+## Implementation Details
+
+### Under the Hood
+
+The `remove` command executes the following SQL query (KVSTORE.cs:63-66):
+
+```sql
+DELETE FROM store
+WHERE key = $key
+```
+
+The full implementation (KVSTORE.cs:60-71):
+
+```csharp
+public int Remove(string key)
+{
+    using var command = connection.CreateCommand();
+    command.CommandText = """
+        DELETE FROM store
+        WHERE key = $key
+    """;
+    command.Parameters.AddWithValue("$key", key);
+    command.ExecuteNonQuery();
+    Console.WriteLine($"Removing key: key {key} from vault");
+    return 0;
+}
+```
+
+### Validation
+
+The command validates that exactly 1 argument is provided (KVSTORE.cs:169-173):
+
+```csharp
+case "remove":
+    if (args.Length == 1)
+    {
+        return Command.REMOVE;
+    }
+```
+
+## Behavior Notes
+
+<Warning>
+**Idempotent Operation**
+
+The `remove` command is idempotent - you can safely run it multiple times on the same key without error. The command does NOT check whether the key exists before attempting deletion.
+
+The same success message is displayed regardless of whether the key was found:
+
+```text
+Removing key: key mykey from vault
+```
+
+If you need to verify whether a key existed before removal, use [`get`](/commands/get) first.
+</Warning>
+
+<Note>
+**No Confirmation**
+
+The remove command does not ask for confirmation before deleting. Once executed, the key-value pair is permanently removed from the vault.
+
+Make sure you want to delete the key before running this command!
+</Note>
+
+## Error Cases
+
+<Warning>
+**Invalid Arguments**
+
+Providing the wrong number of arguments will result in:
+
+```text
+Please enter a valid command, could not execute
+```
+</Warning>
+
+## Use Cases
+
+- Clean up temporary or outdated credentials
+- Remove sensitive data that's no longer needed
+- Delete test entries from the vault
+- Clear out deprecated configuration values
+- Implement data retention policies
+
+## Best Practices
+
+1. **Verify before removing**: Use `vault get <key>` to confirm the key exists and check its value before deletion
+2. **List keys first**: Run `vault list` to see all keys before bulk removals
+3. **No undo**: Remember that removed keys cannot be recovered - there's no undo operation
+
+## Related Commands
+
+- [`add`](/commands/add) - Add a new key-value pair
+- [`get`](/commands/get) - Verify a key exists before removing it
+- [`list`](/commands/list) - List all keys to see what can be removed
+- [`update`](/commands/update) - Update a value instead of removing it

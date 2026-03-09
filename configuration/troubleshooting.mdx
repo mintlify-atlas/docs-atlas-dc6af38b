@@ -1,0 +1,444 @@
+---
+title: 'Troubleshooting'
+description: 'Common issues, error messages, and solutions for Vault CLI'
+---
+
+## Common Errors
+
+This page covers common error messages, their causes, and how to resolve them.
+
+<Accordion title="Please pass in an argument">
+
+**Error Message:**
+```
+Please pass in an argument
+```
+
+**Source:** Program.cs line 11
+
+**Cause:** You ran the `vault` command without any arguments.
+
+**Solution:** Vault requires at least one command argument. Provide a valid command:
+
+```bash
+vault add mykey myvalue
+vault get mykey
+vault list
+```
+
+See the [Commands](/commands/add) documentation for available commands.
+
+</Accordion>
+
+<Accordion title="Please enter a valid command, could not execute">
+
+**Error Message:**
+```
+Please enter a valid command, could not execute
+```
+
+**Source:** KVSTORE.cs lines 138, 154
+
+**Cause:** Either the command name is invalid, or the command was called with the wrong number of arguments.
+
+**Solution:** Verify you're using a valid command with the correct arguments:
+
+| Command | Arguments | Example |
+|---------|-----------|----------|
+| `add` | 2 (key, value) | `vault add mykey myvalue` |
+| `remove` | 1 (key) | `vault remove mykey` |
+| `update` | 2 (key, value) | `vault update mykey newvalue` |
+| `get` | 1 (key) | `vault get mykey` |
+| `list` | 0 | `vault list` |
+
+**Examples of invalid usage:**
+```bash
+# Wrong: missing value argument
+vault add mykey
+
+# Wrong: too many arguments
+vault get mykey extraarg
+
+# Wrong: invalid command name
+vault delete mykey
+```
+
+</Accordion>
+
+<Accordion title="Please {command} is not a valid command">
+
+**Error Message:**
+```
+Please {command} is not a valid comand
+```
+
+**Source:** KVSTORE.cs line 194 (Note: source has typo "comand")
+
+**Cause:** The command name you entered doesn't match any of the supported commands.
+
+**Solution:** Use one of the five supported commands:
+- `add`
+- `remove`
+- `update`
+- `get`
+- `list`
+
+```bash
+# Correct
+vault add mykey myvalue
+
+# Incorrect - use 'remove' not 'delete'
+vault delete mykey
+```
+
+</Accordion>
+
+<Accordion title="Key: {key} does not exist in db">
+
+**Error Message:**
+```
+Key: {key} does not exist in db
+```
+
+**Source:** KVSTORE.cs line 85
+
+**Cause:** You tried to update a key that doesn't exist in the database.
+
+**Solution:** 
+
+1. Check if the key exists:
+```bash
+vault list
+```
+
+2. If the key doesn't exist, use `add` instead of `update`:
+```bash
+vault add mykey myvalue
+```
+
+3. If the key should exist, verify the key name (keys are case-sensitive):
+```bash
+vault add MyKey value    # Different from 'mykey'
+vault add mykey value
+```
+
+<Note>
+The `update` command only modifies existing keys. To add a new key, use the `add` command.
+</Note>
+
+</Accordion>
+
+## Database Issues
+
+<Accordion title="Permission denied when accessing database">
+
+**Symptoms:**
+- Cannot read or write to database
+- Permission errors when running commands
+- Database file cannot be created
+
+**Cause:** Insufficient permissions on the `.kvstore` directory or `store.db` file.
+
+**Solution:**
+
+1. Check permissions on the database directory:
+
+```bash
+ls -la ~/.kvstore/
+```
+
+2. Ensure you have read/write permissions:
+
+<CodeGroup>
+
+```bash macOS/Linux
+chmod 755 ~/.kvstore
+chmod 644 ~/.kvstore/store.db
+```
+
+```powershell Windows
+# Run PowerShell as Administrator
+icacls $env:USERPROFILE\.kvstore /grant:r "$env:USERNAME:(OI)(CI)F" /T
+```
+
+</CodeGroup>
+
+3. If the issue persists, try recreating the database:
+
+```bash
+# Backup first
+cp ~/.kvstore/store.db ~/.kvstore/store.db.backup
+
+# Remove and recreate
+rm ~/.kvstore/store.db
+vault list  # Creates new database
+```
+
+</Accordion>
+
+<Accordion title="Database is locked">
+
+**Error Message:**
+```
+SQLite Error: database is locked
+```
+
+**Cause:** Another process is currently accessing the database, or a previous process didn't close the connection properly.
+
+**Solution:**
+
+1. Check for running Vault processes:
+
+<CodeGroup>
+
+```bash macOS/Linux
+ps aux | grep vault
+```
+
+```powershell Windows
+Get-Process | Where-Object {$_.ProcessName -like "*vault*"}
+```
+
+</CodeGroup>
+
+2. Wait a few seconds and try again (connections auto-close)
+
+3. If the issue persists, reboot your machine to clear all locks
+
+<Warning>
+Do not manually delete lock files, as this can corrupt the database. Let SQLite manage its own locking mechanism.
+</Warning>
+
+</Accordion>
+
+<Accordion title="Database corruption / malformed database">
+
+**Error Message:**
+```
+SQLite Error: database disk image is malformed
+```
+
+**Cause:** The database file has been corrupted, possibly due to:
+- Unexpected system shutdown
+- Disk errors
+- Manual file modification
+- Running out of disk space
+
+**Solution:**
+
+1. **Try recovery first** (if you have a backup):
+
+```bash
+# Restore from backup
+cp ~/.kvstore/store.db.backup ~/.kvstore/store.db
+vault list
+```
+
+2. **Use SQLite recovery tools:**
+
+```bash
+# Dump data from corrupted database
+sqlite3 ~/.kvstore/store.db ".dump" > vault-dump.sql
+
+# Create new database
+rm ~/.kvstore/store.db
+sqlite3 ~/.kvstore/store.db < vault-dump.sql
+```
+
+3. **Last resort - reset the database:**
+
+<Warning>
+This will delete all your stored keys and values permanently.
+</Warning>
+
+```bash
+rm ~/.kvstore/store.db
+vault list  # Creates fresh database
+```
+
+</Accordion>
+
+## Installation Issues
+
+<Accordion title="vault command not found">
+
+**Symptoms:**
+- Running `vault` returns "command not found"
+- Tool appears installed but doesn't run
+
+**Cause:** The .NET global tools directory is not in your PATH.
+
+**Solution:**
+
+1. Verify the tool is installed:
+
+```bash
+dotnet tool list --global
+```
+
+2. Check your PATH includes the .NET tools directory:
+
+<CodeGroup>
+
+```bash macOS/Linux
+echo $PATH | grep .dotnet
+
+# Add to PATH if missing (add to ~/.bashrc or ~/.zshrc)
+export PATH="$PATH:$HOME/.dotnet/tools"
+```
+
+```powershell Windows
+$env:PATH -split ';' | Select-String dotnet
+
+# Add to PATH if missing (run as Administrator)
+[Environment]::SetEnvironmentVariable("Path", $env:Path + ";$env:USERPROFILE\.dotnet\tools", "User")
+```
+
+</CodeGroup>
+
+3. Restart your terminal after modifying PATH
+
+</Accordion>
+
+<Accordion title=".NET runtime not found">
+
+**Error Message:**
+```
+You must install .NET to run this application
+```
+
+**Cause:** .NET 9.0 or later is not installed on your system.
+
+**Solution:**
+
+1. Download and install .NET 9.0 or later from [https://dotnet.microsoft.com/download](https://dotnet.microsoft.com/download)
+
+2. Verify installation:
+
+```bash
+dotnet --version
+```
+
+3. Reinstall Vault after .NET is installed:
+
+```bash
+dotnet tool install --global Vault.10.25.25.001
+```
+
+</Accordion>
+
+## Resetting Vault
+
+If you need to completely reset Vault and start fresh:
+
+<Warning>
+This will permanently delete all stored keys and values. Make sure to back up any important data first.
+</Warning>
+
+### Complete Reset
+
+<CodeGroup>
+
+```bash macOS/Linux
+# Backup (optional)
+cp ~/.kvstore/store.db ~/vault-backup-$(date +%Y%m%d).db
+
+# Delete database
+rm ~/.kvstore/store.db
+
+# Verify reset
+vault list
+# Output: (no keys)
+```
+
+```powershell Windows
+# Backup (optional)
+Copy-Item $env:USERPROFILE\.kvstore\store.db $env:USERPROFILE\vault-backup-$(Get-Date -Format 'yyyyMMdd').db
+
+# Delete database
+Remove-Item $env:USERPROFILE\.kvstore\store.db
+
+# Verify reset
+vault list
+# Output: (no keys)
+```
+
+</CodeGroup>
+
+The database will be automatically recreated the next time you run any Vault command.
+
+## Debug Steps
+
+When troubleshooting issues, follow these steps:
+
+### 1. Verify Installation
+
+```bash
+# Check tool is installed
+dotnet tool list --global | grep -i vault
+
+# Check .NET version
+dotnet --version
+```
+
+### 2. Check Database Location
+
+```bash
+# Verify database exists
+ls -la ~/.kvstore/
+
+# Check database file size
+du -h ~/.kvstore/store.db
+```
+
+### 3. Test Basic Operations
+
+```bash
+# Test each command
+vault list
+vault add testkey testvalue
+vault get testkey
+vault update testkey newvalue
+vault remove testkey
+```
+
+### 4. Examine Database Directly
+
+You can use the SQLite CLI to inspect the database:
+
+```bash
+# Install sqlite3 if needed
+sqlite3 ~/.kvstore/store.db
+
+# Run queries
+SQLite> .tables
+SQLite> .schema store
+SQLite> SELECT * FROM store;
+SQLite> .quit
+```
+
+### 5. Check for Conflicting Processes
+
+```bash
+# Check for processes holding the database
+lsof ~/.kvstore/store.db  # macOS/Linux
+```
+
+<Note>
+If you're still experiencing issues after following these steps, consider resetting the database or checking the [GitHub repository](https://github.com/anomalyco/vault) for known issues.
+</Note>
+
+## Getting Help
+
+If you've tried all troubleshooting steps and still need assistance:
+
+1. Check the database location is correct for your OS
+2. Verify file permissions on `~/.kvstore/` directory
+3. Ensure you're using .NET 9.0 or later
+4. Try with a fresh database (backup first)
+5. Review error messages carefully - they indicate the specific issue
+
+Most issues can be resolved by:
+- Using the correct command syntax
+- Ensuring proper file permissions
+- Resetting a corrupted database

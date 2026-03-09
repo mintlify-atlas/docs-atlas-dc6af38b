@@ -1,0 +1,109 @@
+---
+title: 'add'
+description: 'Add a new key-value pair to the vault'
+---
+
+## Overview
+
+The `add` command stores a new key-value pair in the vault. Each key must be unique - attempting to add a duplicate key will result in an error.
+
+## Syntax
+
+```bash
+vault add <key> <value>
+```
+
+## Parameters
+
+<ParamField path="key" type="string" required>
+  The unique identifier for the stored value. Must not already exist in the vault.
+</ParamField>
+
+<ParamField path="value" type="string" required>
+  The value to store. Can contain spaces and special characters (use quotes for values with spaces).
+</ParamField>
+
+## Examples
+
+### Basic Usage
+
+<CodeGroup>
+```bash Simple key-value
+vault add username john_doe
+```
+
+```bash Value with spaces
+vault add api_key "sk-1234567890abcdef"
+```
+
+```bash Multiple entries
+vault add database_host localhost
+vault add database_port 5432
+vault add database_name myapp
+```
+</CodeGroup>
+
+### Expected Output
+
+```text
+Adding key: api_key with the value: sk-1234567890abcdef to the vault
+```
+
+## Implementation Details
+
+### Under the Hood
+
+The `add` command executes the following SQL query (KVSTORE.cs:49-52):
+
+```sql
+INSERT INTO store (key, value)
+VALUES ($key, $value)
+```
+
+The database schema ensures key uniqueness with a `UNIQUE` constraint on the `key` column.
+
+### Validation
+
+The command validates that exactly 2 arguments are provided (KVSTORE.cs:164-167):
+
+```csharp
+case "add":
+    if (args.Length == 2)
+    {
+        return Command.ADD;
+    }
+```
+
+If the wrong number of arguments is provided, the command fails with an error message.
+
+## Error Cases
+
+<Warning>
+**Duplicate Key Error**
+
+Attempting to add a key that already exists will fail due to the SQLite UNIQUE constraint:
+
+```bash
+vault add mykey "value1"
+vault add mykey "value2"  # Error: UNIQUE constraint failed
+```
+
+Use the [`update`](/commands/update) command instead to modify existing keys.
+</Warning>
+
+<Note>
+**Invalid Arguments**
+
+Providing the wrong number of arguments will result in:
+
+```text
+Please enter a valid command, could not execute
+```
+</Note>
+
+## Related Commands
+
+- [`get`](/commands/get) - Retrieve a value by key
+- [`update`](/commands/update) - Update an existing key's value
+- [`list`](/commands/list) - List all keys in the vault
+- [`remove`](/commands/remove) - Delete a key-value pair

@@ -1,97 +1,103 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Vault"
+description: "A simple, secure CLI key-value store for managing your secrets locally"
 ---
 
-## Setting up
+<div className="flex flex-col items-center justify-center py-12 px-4" style={{background: 'linear-gradient(135deg, #e6f0ff 0%, #ffffff 100%)'}}>
+  <div className="max-w-4xl text-center">
+    <h1 className="text-5xl font-bold mb-6" style={{color: '#044c84'}}>
+      Vault
+    </h1>
+    <p className="text-xl mb-8" style={{color: '#1a1a1a'}}>
+      A simple, file-backed CLI key-value store for saving, retrieving, deleting, and listing secrets locally using SQLite
+    </p>
+    <div className="flex gap-4 justify-center mb-12">
+      <a 
+        href="/installation" 
+        className="px-8 py-3 text-white font-semibold rounded-full"
+        style={{background: 'linear-gradient(135deg, #1e5aff, #4a2aff)'}}
+      >
+        Get Started
+      </a>
+      <a 
+        href="https://github.com/tobibytes/Vault" 
+        className="px-8 py-3 font-semibold border-2 rounded-full"
+        style={{color: '#000000', borderColor: '#044c84', background: 'transparent'}}
+      >
+        View on GitHub
+      </a>
+    </div>
+  </div>
+</div>
 
-Get your documentation site up and running in minutes.
+## Key Features
 
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
+Vault provides a simple, secure way to manage your secrets locally without relying on external services.
 
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Local Storage" icon="hard-drive">
+    All your secrets are stored locally in an SQLite database with per-user isolation
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Simple Interface" icon="terminal">
+    Five intuitive commands: add, get, update, remove, and list
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Cross-Platform" icon="globe">
+    Works seamlessly on Windows, macOS, and Linux
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="No Dependencies" icon="cube">
+    Lightweight CLI tool with minimal dependencies - just .NET 9.0
   </Card>
-</Columns>
+</CardGroup>
 
-## Create beautiful pages
+## Quick Example
 
-Everything you need to create world-class documentation.
+Store and retrieve secrets with simple commands:
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
-  </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
-  </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
-  </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+```bash
+# Add a secret
+vault add api_key "sk_test_123456789"
 
-## Need inspiration?
+# Retrieve it
+vault get api_key
+# Output: sk_test_123456789
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+# List all keys
+vault list
+# Output: api_key
+
+# Update a value
+vault update api_key "sk_live_987654321"
+
+# Remove a secret
+vault remove api_key
+```
+
+## Get Started
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Install Vault as a .NET global tool or build from source
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Get up and running in under a minute
+  </Card>
+  <Card title="Commands" icon="terminal" href="/commands/add">
+    Learn about all available commands and their usage
+  </Card>
+  <Card title="Configuration" icon="gear" href="/configuration/database">
+    Understand database location and troubleshooting
+  </Card>
+</CardGroup>
+
+## Why Vault?
+
+Vault is designed for developers who need a simple, local solution for managing secrets without the complexity of cloud-based secret managers. Perfect for:
+
+- Local development environments
+- Personal API keys and credentials
+- Testing and experimentation
+- Quick secret storage without external dependencies
+
+<Note>
+Vault stores all data locally in your user directory. Your secrets never leave your machine.
+</Note>

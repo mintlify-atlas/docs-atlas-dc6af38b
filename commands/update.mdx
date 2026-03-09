@@ -1,0 +1,169 @@
+---
+title: 'update'
+description: 'Update the value of an existing key in the vault'
+---
+
+## Overview
+
+The `update` command modifies the value associated with an existing key in the vault. If the key doesn't exist, it prints a message indicating the key was not found.
+
+## Syntax
+
+```bash
+vault update <key> <value>
+```
+
+## Parameters
+
+<ParamField path="key" type="string" required>
+  The key whose value you want to update. Must already exist in the vault.
+</ParamField>
+
+<ParamField path="value" type="string" required>
+  The new value to store. Can contain spaces and special characters (use quotes for values with spaces).
+</ParamField>
+
+## Examples
+
+### Basic Usage
+
+<CodeGroup>
+```bash Update existing key
+vault update api_key "sk-new-token-9876543210"
+```
+
+```bash Update with spaces
+vault update welcome_message "Hello, World! Welcome to Vault."
+```
+
+```bash Non-existent key
+vault update missing_key "some value"
+```
+</CodeGroup>
+
+### Expected Output
+
+**When key exists:**
+```text
+Updating key: api_key with the value: sk-new-token-9876543210 in the vault
+```
+
+**When key doesn't exist:**
+```text
+Key: missing_key does not exist in db
+```
+
+### Complete Workflow Example
+
+```bash
+# Add a key
+vault add version "1.0.0"
+
+# Update it
+vault update version "1.1.0"
+# Output: Updating key: version with the value: 1.1.0 in the vault
+
+# Verify the update
+vault get version
+# Output: 1.1.0
+
+# Try to update non-existent key
+vault update nonexistent "value"
+# Output: Key: nonexistent does not exist in db
+```
+
+## Implementation Details
+
+### Under the Hood
+
+The `update` command executes the following SQL query (KVSTORE.cs:75-79):
+
+```sql
+UPDATE store
+SET value = $value
+WHERE key = $key
+```
+
+The implementation checks the number of affected rows to determine if the key exists (KVSTORE.cs:72-90):
+
+```csharp
+public int Update(string key, string value)
+{
+    using var command = connection.CreateCommand();
+    command.CommandText = """
+        UPDATE store
+        SET value = $value
+        WHERE key = $key
+        """;
+    command.Parameters.AddWithValue("$key", key);
+    command.Parameters.AddWithValue("$value", value);
+    int rowsAffected = command.ExecuteNonQuery();
+    if (rowsAffected == 0)
+    {
+        Console.WriteLine($"Key: {key} does not exist in db");
+        return 0;
+    }
+    Console.WriteLine($"Updating key: {key} with the value: {value} in the vault");
+    return 0;
+}
+```
+
+### Validation
+
+The command validates that exactly 2 arguments are provided (KVSTORE.cs:175-179):
+
+```csharp
+case "update":
+    if (args.Length == 2)
+    {
+        return Command.UPDATE;
+    }
+```
+
+## Behavior Notes
+
+<Note>
+**Non-Existent Keys**
+
+Unlike some key-value stores, `update` does NOT create a new entry if the key doesn't exist. It will simply report that the key doesn't exist in the database (KVSTORE.cs:84-86).
+
+If you want to add a new key, use the [`add`](/commands/add) command instead.
+</Note>
+
+<Warning>
+**No Rows Affected**
+
+When updating a non-existent key, the command prints:
+
+```text
+Key: your_key does not exist in db
+```
+
+The command still exits successfully (return code 0), but no changes are made to the vault.
+</Warning>
+
+## Error Cases
+
+<Warning>
+**Invalid Arguments**
+
+Providing the wrong number of arguments will result in:
+
+```text
+Please enter a valid command, could not execute
+```
+</Warning>
+
+## Use Cases
+
+- Rotate API keys or credentials stored in the vault
+- Update configuration values as your application evolves
+- Modify environment-specific settings
+- Change values without removing and re-adding keys
+
+## Related Commands
+
+- [`add`](/commands/add) - Add a new key-value pair
+- [`get`](/commands/get) - Retrieve a value to verify the update
+- [`list`](/commands/list) - List all keys to see what can be updated
+- [`remove`](/commands/remove) - Delete a key-value pair

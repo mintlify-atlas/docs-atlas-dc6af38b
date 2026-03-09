@@ -1,0 +1,191 @@
+---
+title: 'Installation'
+description: 'Install Vault as a .NET global tool or build from source'
+---
+
+<Note>
+  Vault requires .NET 9.0 or later to be installed on your system.
+</Note>
+
+## Prerequisites
+
+Before installing Vault, ensure you have .NET 9.0 or later installed:
+
+```bash
+dotnet --version
+```
+
+If you need to install .NET, visit the [official .NET download page](https://dotnet.microsoft.com/download).
+
+## Installation Methods
+
+<Tabs>
+  <Tab title="Global Tool (Recommended)">
+    The easiest way to install Vault is as a .NET global tool. This makes the `vault` command available system-wide.
+
+    <Steps>
+      <Step title="Install the tool">
+        Run the following command to install Vault globally:
+
+        ```bash
+        dotnet tool install --global Vault.10.25.25
+        ```
+
+        This will download and install the latest version of Vault from the NuGet package repository.
+      </Step>
+
+      <Step title="Verify installation">
+        Confirm that Vault is installed correctly by checking the version:
+
+        ```bash
+        vault list
+        ```
+
+        If this is your first time running Vault, you should see:
+
+        ```
+        (no keys)
+        ```
+
+        This confirms that Vault is working and has created your personal database.
+      </Step>
+
+      <Step title="Check database location">
+        Your vault database has been created at:
+
+        <CodeGroup>
+          ```bash Windows
+          C:\Users\{username}\.kvstore\store.db
+          ```
+
+          ```bash macOS
+          /Users/{username}/.kvstore/store.db
+          ```
+
+          ```bash Linux
+          /home/{username}/.kvstore/store.db
+          ```
+        </CodeGroup>
+
+        The database directory (`.kvstore`) is automatically created in your home directory.
+      </Step>
+    </Steps>
+  </Tab>
+
+  <Tab title="From Source">
+    If you want to build Vault from source or contribute to development, you can clone and build the project.
+
+    <Steps>
+      <Step title="Clone the repository">
+        Clone the Vault repository to your local machine:
+
+        ```bash
+        git clone <your-repo-url>
+        cd csharp
+        ```
+      </Step>
+
+      <Step title="Build the project">
+        Build the project using the .NET CLI:
+
+        ```bash
+        dotnet build
+        ```
+
+        This will restore dependencies and compile the project.
+      </Step>
+
+      <Step title="Run from source">
+        You can run Vault directly from source using:
+
+        ```bash
+        dotnet run -- <command> <args>
+        ```
+
+        For example:
+
+        ```bash
+        dotnet run -- add mykey "my value"
+        dotnet run -- list
+        ```
+
+        <Note>
+          The `--` separator is required to pass arguments to the application rather than to the `dotnet run` command.
+        </Note>
+      </Step>
+
+      <Step title="Optional: Install locally as a tool">
+        To install your built version as a global tool:
+
+        ```bash
+        dotnet pack
+        dotnet tool install --global --add-source ./bin/Debug Vault.10.25.25
+        ```
+      </Step>
+    </Steps>
+  </Tab>
+</Tabs>
+
+## Updating Vault
+
+To update Vault to the latest version:
+
+```bash
+dotnet tool update --global Vault.10.25.25
+```
+
+## Uninstalling Vault
+
+If you need to uninstall Vault:
+
+```bash
+dotnet tool uninstall --global Vault.10.25.25
+```
+
+<Warning>
+  Uninstalling the tool does **not** delete your vault database. Your data will remain in the `.kvstore` directory in your home folder. To completely remove all data, manually delete the `.kvstore` directory after uninstalling.
+</Warning>
+
+## Troubleshooting
+
+### Command not found after installation
+
+If the `vault` command is not recognized after installation, you may need to add the .NET tools directory to your PATH:
+
+<CodeGroup>
+  ```bash Windows (PowerShell)
+  $env:PATH += ";$env:USERPROFILE\.dotnet\tools"
+  ```
+
+  ```bash macOS/Linux
+  export PATH="$PATH:$HOME/.dotnet/tools"
+  ```
+</CodeGroup>
+
+To make this permanent, add the export command to your shell profile (`~/.bashrc`, `~/.zshrc`, etc.).
+
+### Permission errors on Linux/macOS
+
+If you encounter permission errors when creating the database, ensure your home directory has proper write permissions:
+
+```bash
+ls -ld ~
+```
+
+### .NET version mismatch
+
+Vault requires .NET 9.0. If you have an older version installed, you'll see an error during installation. Update to .NET 9.0 or later:
+
+```bash
+dotnet --version
+```
+
+Visit [dotnet.microsoft.com](https://dotnet.microsoft.com/download) to download the latest version.
+
+## Next Steps
+
+Now that Vault is installed, learn how to use it:
+
+<Card title="Quickstart Guide" icon="rocket" href="/quickstart" color="#0057e7">
+  Get started with Vault in just a few minutes
+</Card>
